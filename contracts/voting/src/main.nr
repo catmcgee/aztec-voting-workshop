@@ -14,7 +14,7 @@ contract Voting {
 	    BOOL_SERIALIZED_LEN},
 	    aztec_address_serialization::{AztecAddressSerializationMethods,
 	    AZTEC_ADDRESS_SERIALIZED_LEN},
-	}, types::address::{AztecAddress}, hash::pedersen_hash, // hash for creating nullifier
+	}, types::address::{AztecAddress},
 
     };
 
