@@ -15,7 +15,7 @@ contract Voting {
 	    aztec_address_serialization::{AztecAddressSerializationMethods,
 	    AZTEC_ADDRESS_SERIALIZED_LEN},
 	}, types::address::{AztecAddress},
-
+        constants_gen::EMPTY_NULLIFIED_COMMITMENT,
     };
 
     // value note used for compute_note_hash_and_nullifier()
@@ -91,7 +91,7 @@ contract Voting {
     fn cast_vote(vote: Field) {
         let secret = get_secret_key(context.msg_sender()); // get secret key of caller of function
         let nullifier = dep::std::hash::pedersen_hash([context.msg_sender(), secret.low, secret.high]); // compute nullifier with this secret key so others can't descrypt it
-        context.push_new_nullifier(nullifier, 0); // push nullifier
+        context.push_new_nullifier(nullifier, EMPTY_NULLIFIED_COMMITMENT); // push nullifier
         context.call_public_function(
             context.this_address(), 
             compute_selector("add_to_tally_public(Field)"), 
