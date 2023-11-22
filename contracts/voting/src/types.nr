@@ -4,7 +4,7 @@ use dep::safe_math::SafeU120;
 global SAFE_U120_SERIALIZED_LEN: Field = 1;
 
 pub fn deserializeU120(fields: [Field; SAFE_U120_SERIALIZED_LEN]) -> SafeU120 {
-    SafeU120{value: fields[0] as u120}
+    SafeU120 { value: fields[0] as u120 }
 }
 
 pub fn serializeU120(value: SafeU120) -> [Field; SAFE_U120_SERIALIZED_LEN] {
