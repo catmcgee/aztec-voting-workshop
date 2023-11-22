@@ -1,4 +1,3 @@
-mod types;
 contract Voting {
     // aztec core library imports
     use dep::aztec::{
@@ -10,32 +9,20 @@ contract Voting {
 	 state_vars::{
 	    map::Map, public_state::PublicState,
 	}, types::type_serialization::{ // serialization methods for using booleans and aztec addresses
-	    bool_serialization::{BoolSerializationMethods,
-	    BOOL_SERIALIZED_LEN},
-	    aztec_address_serialization::{AztecAddressSerializationMethods,
-	    AZTEC_ADDRESS_SERIALIZED_LEN},
-	}, types::address::{AztecAddress},
-        constants_gen::EMPTY_NULLIFIED_COMMITMENT,
+	    bool_serialization::{BoolSerializationMethods, BOOL_SERIALIZED_LEN},
+	    aztec_address_serialization::{AztecAddressSerializationMethods, AZTEC_ADDRESS_SERIALIZED_LEN},
+        field_serialization::{ FieldSerializationMethods, FIELD_SERIALIZED_LEN},
+	}, 
+    types::address::{AztecAddress},
+    constants_gen::EMPTY_NULLIFIED_COMMITMENT,
     };
-
-    // value note used for compute_note_hash_and_nullifier()
-    use dep::value_note::{ 
-	    balance_utils, value_note::{
-		ValueNote, ValueNoteMethods, VALUE_NOTE_LEN,
-	    },
-    };
-
-    use dep::safe_math::SafeU120;
-
-    // like OZ safemath library
-    use crate::types::{SafeU120SerializationMethods, SAFE_U120_SERIALIZED_LEN};
 
     // serialization methods for using u120
     // create storage struct
     // vars that will be stored in persistant state
     struct Storage {
     admin: PublicState<AztecAddress, AZTEC_ADDRESS_SERIALIZED_LEN>, // admin can end vote
-    tally: Map<PublicState<SafeU120, SAFE_U120_SERIALIZED_LEN>>, // we will store vote as key and number of votes as value
+    tally: Map<PublicState<Field, FIELD_SERIALIZED_LEN>>, // we will store vote as key and number of votes as value
     voteEnded: PublicState<bool, BOOL_SERIALIZED_LEN>, // voteEnded is boolean
 }
 
@@ -57,7 +44,7 @@ contract Voting {
 			PublicState::new(
 			    context,
                 slot, 
-                SafeU120SerializationMethods,
+                FieldSerializationMethods,
 			)
 		    },
 		 ),
@@ -70,9 +57,7 @@ contract Voting {
 	}
 
     #[aztec(private)] // annotation to mark function as private and expose private context
-    fn constructor(admin: AztecAddress)
-{
-        // called when contract is deployed
+    fn constructor(admin: AztecAddress) { // called when contract is deployed
         context.call_public_function(
             // we cannot update public state directly from private function but we can call public function (which queues it)
             context.this_address(),// address that calls public function. here we are using contract address for privacy
@@ -101,8 +86,7 @@ contract Voting {
     #[aztec(public)] 
     internal fn add_to_tally_public(vote: Field) {
         assert(storage.voteEnded.read() == false, "Vote has ended"); // assert that vote has not ended
-        let amount = SafeU120::new(1);  // can only add safeu20s to safeu120s so we make a new one with value of 1
-        let new_tally = storage.tally.at(vote).read().add(amount);
+        let new_tally = storage.tally.at(vote).read() + 1;
         storage.tally.at(vote).write(new_tally);
     }
 
@@ -112,8 +96,8 @@ contract Voting {
         storage.voteEnded.write(true);
     }
 
-    unconstrained fn get_vote(vote: Field) -> u120 {
-        storage.tally.at(vote).read().value
+    unconstrained fn get_vote(vote: Field) -> Field {
+        storage.tally.at(vote).read()
     }
 
     // compute_note_hash_and_nullifier fn required in all contracts that manipulate private state
