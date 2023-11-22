@@ -4,7 +4,9 @@ contract Voting {
     use dep::aztec::{
 	context::{PrivateContext, Context}, note::{ 
 	    note_header::NoteHeader, utils as note_utils, // used to generate hashes and nullifiers
-	}, selector::compute_selector, // used to compute function selector for calling a function 
+	},  
+    oracle::notes::check_nullifier_exists,
+    selector::compute_selector, // used to compute function selector for calling a function 
 	 state_vars::{
 	    map::Map, public_state::PublicState,
 	}, types::type_serialization::{ // serialization methods for using booleans and aztec addresses
@@ -15,11 +17,22 @@ contract Voting {
 	}, types::address::{AztecAddress}, hash::pedersen_hash, // hash for creating nullifier
 
     }; 
-    use dep::value_note::{ // used for compute_note_hash_and_nullifier
+    // value note used for compute_note_hash_and_nullifier()
+    use dep::value_note::{ 
 	    balance_utils, value_note::{
 		ValueNote, ValueNoteMethods, VALUE_NOTE_LEN,
 	    },
     }; 
+
+    // address note used for computing nullifiers for the voter
+    use dep::address_note::{
+        address_note::{
+            AddressNote, AddressNoteMethods, ADDRESS_NOTE_LEN,
+        },
+    };
+
+   
+
     use dep::safe_math::SafeU120; // like OZ safemath library 
 
     use crate::types::{SafeU120SerializationMethods, SAFE_U120_SERIALIZED_LEN};  // serialization methods for using u120
@@ -76,35 +89,18 @@ struct Storage {
         storage.voteEnded.write(false);
     }
 
-    struct OneUseOnly { // struct for defining what goes in our nullifier
-	    user: AztecAddress
-    }
-
-
-    impl OneUseOnly {  // impl block for nullifier struct 
-	    pub fn new(user: AztecAddress) -> Self {  // create new struct for going inside nullifier
-	        Self { user }
-	}
-
-	fn spend_private(self, context: &mut PrivateContext) { 
-	    let user = self.user.address; 
-        let slot = 69; 
-        let nullifier = dep::std::hash::pedersen_hash([user, slot]); // create nullifier with pedersen hash
-	    context.push_new_nullifier(nullifier, 0); // push nullifier to aztec, takes nullifier & nullified commitment (0 in our case)
-	    }
-    }
-
     #[aztec(private)]
     fn cast_vote(vote: Field)  {
-        context.call_public_function(
+    let user_address_note = AddressNote::new(context.msg_sender(), context.msg_sender()); // create nullifier with msg_sender. probably not supposed to be msg_snender but just doing this for now
+	let nullifier = user_address_note.compute_nullifier();
+    check_nullifier_exists(nullifier); // check if nullifier exists
+    context.push_new_nullifier(nullifier,0); // push nullifier
+
+    context.call_public_function(
 	        context.this_address(),
 	        compute_selector("add_to_tally_public(Field)"), 
             [vote],
 	   );
-
-
-	let user_nullifier = OneUseOnly::new(AztecAddress::new(context.msg_sender())); // create nullifier struct with msg_sender
-	user_nullifier.spend_private(&mut context); // push nullifier
     }
 
     #[aztec(public)] 
