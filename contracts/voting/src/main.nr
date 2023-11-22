@@ -117,11 +117,7 @@ contract Voting {
     }
 
     // compute_note_hash_and_nullifier fn required in all contracts that manipulate private state
-    // it is usually the exact same, but will differ if you use custom note types
-    unconstrained fn compute_note_hash_and_nullifier( contract_address:
-        Field, nonce: Field, storage_slot: Field, preimage: [Field;
-        VALUE_NOTE_LEN], ) -> [Field; 4] {
-        let note_header = NoteHeader::new(contract_address, nonce, storage_slot);
-        note_utils::compute_note_hash_and_nullifier(ValueNoteMethods, note_header, preimage)
+     unconstrained fn compute_note_hash_and_nullifier(contract_address: Field, nonce: Field, storage_slot: Field, serialized_note: [Field; 0]) -> [Field; 4] {
+        [0, 0, 0, 0]
     }
 }
